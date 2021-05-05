@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>boxgame</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+</head>
+
+<body>
+<script type = "text/javascript">
+
+    var config = {
+        type: Phaser.AUTO,
+        width: 900,
+        height: 650,
+        physics:{
+            default: 'arcade',
+            arcade: {
+                debug: false
+            }
+        },
+        scene:{
+            preload: preload,
+            create: create,
+            update: update
+        }
+    }
+
+    var game = new Phaser.Game(config)
+
+    function preload(){
+        this.load.image('background', 'assets/background.PNG')
+        this.load.image('playerB', 'assets/player.PNG')
+        this.load.image('ground1', 'assets/ground1.PNG')
+        this.load.image('lastwall', 'assets/lastwall.PNG')
+        this.load.image('gun', 'assets/gun1.PNG')
+
+        this.load.image('enemy1', 'assets/enemy1.PNG')
+    }
+let jump = 0
+
+let Player
+let PlayerCondition
+let Ground
+
+let Gun
+
+let ispointerdown
+
+let shotiterval
+
+let playerlife = 100
+
+
+
+    function create(){
+
+        this.add.image(800,100, 'background').setScale(7)
+        Player = this.physics.add.sprite(100,600,'playerB')
+
+        Player.body.setGravityY(1000)
+        Player.setCollideWorldBounds(false);
+
+        //camera 설정
+        this.cameras.main.setBounds(0,0,102400,200048)
+        this.cameras.main.startFollow(Player, true, 0.09, 0.09)
+
+
+        Ground = this.physics.add.staticGroup()
+        Gun = this.physics.add.staticGroup()
+
+        // 총 설정
+
+
+        Ground .create(0,700, "lastwall").setScale(5).refreshBody()
+
+
+        Ground.create(700,1500,"ground1").setScale(5).refreshBody()
+
+        enemy1(300,300,this)
+        enemy1(400,300,this)
+
+        // 바닥 물리 설정
+        this.physics.add.collider(Player,Ground)
+
+        this.input.keyboard.on('keydown', (event)=> {
+            console.log(event.code)
+            if (event.code === "KeyW" && jump < 2){
+                jump = jump + 1
+                Player.setVelocityY(-600)
+            } else if (event.code === "KeyD"){
+                Player.setVelocityX(200)
+            } else if (event.code === "KeyA"){
+                Player.setVelocityX(-200)
+            }
+        })
+
+        //공격
+        setInterval(()=>{
+            this.input.on('pointerdown', () =>{
+                shot(this)
+            })
+        },200)
+    }
+
+    function update(){
+        PlayerCondition_isTouchingGround = Player.body.touching.down
+        PlayerCondition_isTouchingEnemy = false
+
+
+        if(Player.body.touching.down){
+            jump = 0
+        }
+
+        if (playerlife < 0){
+            let endmsg = this.add.text(280, 250, 'score: 0', { fontSize: '150px', fill: 'red'})
+            endmsg.setText("Game Over")
+        }
+    }
+    
+    //atan 각도구하기 현재 미구현 총 발사 함수
+    function shot(t){
+        const mx = game.input.mousePointer.x
+        const my = game.input.mousePointer.y
+        const px = Player.x
+        const py = Player.y
+        let bullet = t.physics.add.sprite(px,py, 'gun').setScale(0.7).refreshBody()
+        Gun.create(Player.x,Player.y, 'gun').setScale(0.7).refreshBody()
+        // Gun.children.entries[Gun.children.entries.length-1].angle = 10
+        console.log(Gun)
+    }
+
+    function enemy1(x,y,t){
+        let enemy = t.physics.add.sprite(x,y,'enemy1')
+        enemy.body.setGravityY(900)
+        enemy.setBounce(0.3)
+        t.physics.add.collider(enemy,Ground)
+        t.physics.add.overlap(Player,enemy,damage,null,t)
+        let interval = setInterval(()=>{
+            DistanceToPlayer = Math.sqrt((enemy.x - Player.x) ** 2 + (enemy.y - Player.y)** 2  )
+            if(DistanceToPlayer < 900){
+
+                if (DistanceToPlayer < 30){
+                    damage(15)
+                    enemy.destroy()
+                    clearInterval(interval)
+                    enemy.angle = 300
+                } else if (Player.x-enemy.x>0){
+                    enemy.setVelocityX(80)
+                } else{
+                    enemy.setVelocityX(-80)
+                }
+            }
+        }, 10)
+
+        //enemy1dict[`enemy1_${enemy1num}`] = enemy
+
+
+    }
+
+    function damage(num){
+        playerlife = playerlife - num
+        
+    }
+
+</script>
+
+</body>
+</html>
