@@ -43,7 +43,6 @@ let Player
 let PlayerCondition
 let Ground
 
-let Gun
 
 let ispointerdown
 
@@ -67,7 +66,6 @@ let playerlife = 100
 
 
         Ground = this.physics.add.staticGroup()
-        Gun = this.physics.add.staticGroup()
 
         // 총 설정
 
@@ -98,9 +96,10 @@ let playerlife = 100
         //공격
         setInterval(()=>{
             this.input.on('pointerdown', () =>{
-                shot(this)
+                shot(this,Ground)
             })
         },200)
+
     }
 
     function update(){
@@ -119,15 +118,41 @@ let playerlife = 100
     }
     
     //atan 각도구하기 현재 미구현 총 발사 함수
-    function shot(t){
+    let shotinterval
+    function shot(t,G){
         const mx = game.input.mousePointer.x
         const my = game.input.mousePointer.y
         const px = Player.x
         const py = Player.y
-        let bullet = t.physics.add.sprite(px,py, 'gun').setScale(0.7).refreshBody()
-        Gun.create(Player.x,Player.y, 'gun').setScale(0.7).refreshBody()
+
+        let bullet = t.physics.add.sprite(px,py, 'gun').setScale(0.7)
+        bullet.body.setGravityY(0)
+        bullet.body.setGravityX(0)
+        console.log(mx, my)
+        shotinterval = setInterval(()=>{
+            if (mx - px > 0  ){
+                bullet.setVelocityX(500)
+            } else if (mx - px <0 ){
+                bullet.setVelocityX(-500)
+            } else {
+                bullet.setVelocityX(500)
+
+            }
+
+            t.physics.add.overlap(G,bullet,shotDestroy, null, t)
+        },1)
         // Gun.children.entries[Gun.children.entries.length-1].angle = 10
-        console.log(Gun)
+    }
+
+    function shotDestroy(bullet){
+        clearInterval( shotinterval)
+        try {
+            bullet.destroy()
+        }
+        catch {
+            console.error("bullet error")
+        }
+
     }
 
     function enemy1(x,y,t){
