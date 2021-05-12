@@ -51,28 +51,38 @@ let shotiterval
 let playerlife = 100
 
 
+let shoting
+
+
+let enemy_group
+let shot_group
 
     function create(){
+        //group 정의
+        enemy_group = this.add.group()
+        shot_group = this.add.group()
 
+        Ground = this.physics.add.staticGroup()
+
+
+        //background 설정
         this.add.image(800,100, 'background').setScale(7)
+        //player. 설정
         Player = this.physics.add.sprite(100,600,'playerB')
 
         Player.body.setGravityY(1000)
         Player.setCollideWorldBounds(false);
 
         //camera 설정
-        this.cameras.main.setBounds(0,0,102400,200048)
-        this.cameras.main.startFollow(Player, true, 0.09, 0.09)
+        this.cameras.main.setBounds(0,0,20000,1200)
+        this.cameras.main.startFollow(Player, true, 0.11, 0.11)
 
 
-        Ground = this.physics.add.staticGroup()
 
         // 총 설정
 
 
         Ground .create(0,700, "lastwall").setScale(5).refreshBody()
-
-
         Ground.create(700,1500,"ground1").setScale(5).refreshBody()
 
         enemy1(300,300,this)
@@ -94,12 +104,15 @@ let playerlife = 100
         })
 
         //공격
-        setInterval(()=>{
-            this.input.on('pointerdown', () =>{
-                shot(this,Ground)
-            })
-        },200)
+        this.input.on('pointerdown', () =>{
+            shoting = true
+        })
 
+        this.input.on('pointerup', () =>{
+            shoting = false
+        })
+
+        shoting_bullet(this,Ground)
     }
 
     function update(){
@@ -116,9 +129,17 @@ let playerlife = 100
             endmsg.setText("Game Over")
         }
     }
+
+    function shoting_bullet(t,G){
+        setInterval(()=>{
+            if (shoting === true){
+                shot(t,G)
+            }
+        },190)
+
+    }
     
     //atan 각도구하기 현재 미구현 총 발사 함수
-    let shotinterval
     function shot(t,G){
         const mx = game.input.mousePointer.x
         const my = game.input.mousePointer.y
@@ -126,12 +147,19 @@ let playerlife = 100
         const py = Player.y
 
         let bullet = t.physics.add.sprite(px,py, 'gun').setScale(0.7)
+        shot_group.add(bullet)
         bullet.body.setGravityY(0)
         bullet.body.setGravityX(0)
-        console.log(mx, my)
-        shotinterval = setInterval(()=>{
+        console.log(Player)
+
+
+        t.physics.add.overlap(G,bullet,()=>(shotDestroy(bullet,shotinterval))) 
+        // 총=> 적 반응 설정
+        t.physics.add.overlap(enemy_group,shot_group,()=>{hit_enemy(bullet,shotinterval)},null,t)
+
+        let shotinterval = setInterval(()=>{
             if (mx - px > 0  ){
-                bullet.setVelocityX(500)
+                bullet.setVelocityX(500,500)
             } else if (mx - px <0 ){
                 bullet.setVelocityX(-500)
             } else {
@@ -139,28 +167,38 @@ let playerlife = 100
 
             }
 
-            t.physics.add.overlap(G,bullet,shotDestroy, null, t)
+            if((bullet.x - px) > 600 ||  (bullet.x - px) < -600){
+                shotDestroy(bullet,shotinterval)
+            }
         },1)
         // Gun.children.entries[Gun.children.entries.length-1].angle = 10
     }
 
-    function shotDestroy(bullet){
-        clearInterval( shotinterval)
-        try {
-            bullet.destroy()
-        }
-        catch {
-            console.error("bullet error")
-        }
+    function hit_enemy(bullet,shotinterval){
+        shotDestroy(bullet,shotinterval)
+        bullet.destroy()
+    }
 
+    function shotDestroy(bullet, shotinterval){
+        clearInterval( shotinterval)
+        bullet.destroy()
     }
 
     function enemy1(x,y,t){
         let enemy = t.physics.add.sprite(x,y,'enemy1')
+
+        enemy.ed = 0
+
+        enemy_group.add( enemy)
         enemy.body.setGravityY(900)
         enemy.setBounce(0.3)
         t.physics.add.collider(enemy,Ground)
         t.physics.add.overlap(Player,enemy,damage,null,t)
+
+
+        t.physics.add.overlap(enemy_group,shot_group,()=>{enemy.ed +=1})
+        console.log(enemy_group)
+
         let interval = setInterval(()=>{
             DistanceToPlayer = Math.sqrt((enemy.x - Player.x) ** 2 + (enemy.y - Player.y)** 2  )
             if(DistanceToPlayer < 900){
@@ -169,19 +207,24 @@ let playerlife = 100
                     damage(15)
                     enemy.destroy()
                     clearInterval(interval)
-                    enemy.angle = 300
                 } else if (Player.x-enemy.x>0){
                     enemy.setVelocityX(80)
                 } else{
                     enemy.setVelocityX(-80)
                 }
+
+                if (enemy.ed > 6 ){
+                    enemy.destroy()
+                    clearInterval(interval)
+                }
+
             }
         }, 10)
 
         //enemy1dict[`enemy1_${enemy1num}`] = enemy
-
-
     }
+
+
 
     function damage(num){
         playerlife = playerlife - num
