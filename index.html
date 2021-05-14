@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>boxgame</title>
+    <title>ADVANCE</title>
     <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
 </head>
 
@@ -36,6 +36,10 @@
         this.load.image('gun', 'assets/gun1.PNG')
 
         this.load.image('enemy1', 'assets/enemy1.PNG')
+
+        this.load.image('enemy2', 'assets/enemy2.PNG')
+
+        this.load.image('GoalPoint', 'assets/goalpoint.PNG')
     }
 let jump = 0
 
@@ -55,11 +59,15 @@ let shoting
 
 
 let enemy_group
+let enemy_shot_group
 let shot_group
+
+let enemyhp_list = []
 
     function create(){
         //group 정의
         enemy_group = this.add.group()
+        enemy_shot_group = this.add.group()
         shot_group = this.add.group()
 
         Ground = this.physics.add.staticGroup()
@@ -82,15 +90,26 @@ let shot_group
         // 총 설정
 
 
-        Ground .create(0,700, "lastwall").setScale(5).refreshBody()
+        Ground.create(0,700, "lastwall").setScale(5).refreshBody()
         Ground.create(700,1500,"ground1").setScale(5).refreshBody()
 
-        enemy1(300,300,this)
-        enemy1(400,300,this)
+
+        enemy1(700,300,0,this)
+        enemy1(800,300,1,this)
+        enemy2(800,300,2,this)
+
+
+        //goal point 설정
+        let goalpoint = this.physics.add.sprite(500,700, 'GoalPoint').setScale(0.3)
+        goalpoint.body.setGravityX(0)
+        goalpoint.body.setGravityY(900)
+        goalpoint.setBounce(1)
 
         // 바닥 물리 설정
+        this.physics.add.collider(goalpoint,Ground)
         this.physics.add.collider(Player,Ground)
 
+        //f플레이어 움직임 설정
         this.input.keyboard.on('keydown', (event)=> {
             console.log(event.code)
             if (event.code === "KeyW" && jump < 2){
@@ -102,17 +121,37 @@ let shot_group
                 Player.setVelocityX(-200)
             }
         })
+        // 미끄러짐 없에기 실페
+        //this.input.keyboard.on('keyup', (event)=> {
+        //    if (event.code === "KeyD" || event.code === "KeyA"){
+        //        Player.setVelocityX(0)
+        //    }
+        ////    if (event.code === "KeyD" || event.code === "KeyA"){
+        ////        if(Player.body.touching.down){
+        ////            Player.setVelocityX(0)
+        ////        }
+        ////    }
+        //})
+
 
         //공격
         this.input.on('pointerdown', () =>{
             shoting = true
         })
 
-        this.input.on('pointerup', () =>{
+        this.input.on('pointerup', () =>{1
             shoting = false
         })
 
         shoting_bullet(this,Ground)
+
+        let endinterval = setInterval(()=>{
+            if (playerlife < 0){
+                let endmsg = this.add.text(Player.x-300, Player.y+50, 'score: 0', { fontSize: '100px', fill: 'red'})
+                endmsg.setText("Game Over")
+                clearInterval(endinterval)
+            }
+        },3000)
     }
 
     function update(){
@@ -121,13 +160,10 @@ let shot_group
 
 
         if(Player.body.touching.down){
+
             jump = 0
         }
 
-        if (playerlife < 0){
-            let endmsg = this.add.text(280, 250, 'score: 0', { fontSize: '150px', fill: 'red'})
-            endmsg.setText("Game Over")
-        }
     }
 
     function shoting_bullet(t,G){
@@ -142,15 +178,16 @@ let shot_group
     //atan 각도구하기 현재 미구현 총 발사 함수
     function shot(t,G){
         const mx = game.input.mousePointer.x
-        const my = game.input.mousePointer.y
+        // 클릭한 위치로 발사하기 만들기
+        //const my = game.input.mousePointer.y
         const px = Player.x
         const py = Player.y
+        //console.log(mx)
 
         let bullet = t.physics.add.sprite(px,py, 'gun').setScale(0.7)
         shot_group.add(bullet)
         bullet.body.setGravityY(0)
         bullet.body.setGravityX(0)
-        console.log(Player)
 
 
         t.physics.add.overlap(G,bullet,()=>(shotDestroy(bullet,shotinterval))) 
@@ -158,13 +195,13 @@ let shot_group
         t.physics.add.overlap(enemy_group,shot_group,()=>{hit_enemy(bullet,shotinterval)},null,t)
 
         let shotinterval = setInterval(()=>{
-            if (mx - px > 0  ){
-                bullet.setVelocityX(500,500)
-            } else if (mx - px <0 ){
-                bullet.setVelocityX(-500)
-            } else {
+            //if (mx - px > 0  ){
+            if (mx > 450) {
                 bullet.setVelocityX(500)
-
+            } else if(px < 450 && mx - px > 0 ){
+                bullet.setVelocityX(500)
+            }else{
+                bullet.setVelocityX(-500)
             }
 
             if((bullet.x - px) > 600 ||  (bullet.x - px) < -600){
@@ -184,50 +221,105 @@ let shot_group
         bullet.destroy()
     }
 
-    function enemy1(x,y,t){
-        let enemy = t.physics.add.sprite(x,y,'enemy1')
+//자폭하는적
+    function enemy1(x,y,i,t){
+        let enemy = t.physics.add.sprite(x,y,'enemy1').setScale(1)
 
-        enemy.ed = 0
+        enemyhp_list[i] = 4
 
         enemy_group.add( enemy)
         enemy.body.setGravityY(900)
         enemy.setBounce(0.3)
         t.physics.add.collider(enemy,Ground)
-        t.physics.add.overlap(Player,enemy,damage,null,t)
+        //여기로 옯김
+        t.physics.add.overlap(Player,enemy,()=>{ damage(15); enemyDestroy(enemy,interval); console.log(playerlife) },null,t)
 
 
-        t.physics.add.overlap(enemy_group,shot_group,()=>{enemy.ed +=1})
-        console.log(enemy_group)
+        t.physics.add.overlap(enemy,shot_group,()=>{enemyhp_list[i] -= 1 })
 
         let interval = setInterval(()=>{
             DistanceToPlayer = Math.sqrt((enemy.x - Player.x) ** 2 + (enemy.y - Player.y)** 2  )
             if(DistanceToPlayer < 900){
 
-                if (DistanceToPlayer < 30){
-                    damage(15)
-                    enemy.destroy()
-                    clearInterval(interval)
-                } else if (Player.x-enemy.x>0){
-                    enemy.setVelocityX(80)
+                //이기능을 위에 ovcerlap 으로 옮김
+                //if (DistanceToPlayer < 30){
+                //    damage(15)
+                //    enemyDestroy(enemy,interval)
+                if (Player.x-enemy.x>0){
+                    enemy.setVelocityX(110)
                 } else{
-                    enemy.setVelocityX(-80)
+                    enemy.setVelocityX(-110)
                 }
 
-                if (enemy.ed > 6 ){
-                    enemy.destroy()
-                    clearInterval(interval)
+                if (enemyhp_list[i] <= 0 ){
+                    enemyDestroy(enemy,interval)
                 }
 
             }
-        }, 10)
+        }, 1000)
 
         //enemy1dict[`enemy1_${enemy1num}`] = enemy
+    }
+
+// 총쏘는 적
+    function enemy2(x,y,i,t){
+        let enemy = t.physics.add.sprite(x,y, 'enemy2').setScale(1)
+
+        enemyhp_list[i] = 4
+
+        enemy_group.add( enemy)
+        enemy.body.setGravityY(900)
+        enemy.setBounce(0.3)
+        t.physics.add.collider(enemy,Ground)
+        t.physics.add.overlap(enemy,Player,()=>{damage(7); enemyDestroy(enemy,e_interval)}, null, t)
+
+        let e_interval = setInterval(()=>{
+            DistanceToPlayer = Math.sqrt((enemy.x - Player.x) ** 2 + (enemy.y - Player.y)** 2  )
+            if (DistanceToPlayer<500){
+                if(Player.x - enemy.x > 0){
+                    enemy.setVelocityX(-50)
+                } else {
+                    enemy.setVelocityX(50)
+                }
+
+            } else { enemy.setVelocityX(0) }
+            if (enemyhp_list[i] <= 0 ){
+                enemyDestroy(enemy,interval)
+            }
+            if(DistanceToPlayer < 1200){shot_enemy2(enemy,t)}
+        }, 1000)
+    }
+
+    function shot_enemy2(enemy,t){
+        let enemy_bullet = t.physics.add.sprite(enemy.x,enemy.y, 'enemy2').setScale(0.3)
+        enemy_shot_group.add(enemy_bullet)
+
+        t.physics.add.overlap(Player, enemy_bullet,()=>{  clearInterval(interval);enemy_bullet.destroy(); damage(5); }, null, t)
+        t.physics.add.overlap(Ground, enemy_bullet, ()=>{ clearInterval(interval);enemy_bullet.destroy(); }, null, t)
+        let interval = setInterval(()=>{
+            if(Player.x -enemy.x > 0){
+                enemy_bullet.setVelocityX(140)
+            } else {
+                enemy_bullet.setVelocityX(-140)
+            }
+
+            if (enemy.x - enemy_bullet.x > 1200 || enemy.x- enemy_bullet.x < -1200){
+                enemy_bullet.destroy()
+                clearInterval(interval)
+            }
+        },1000)
+    }
+
+    function enemyDestroy(enemy, interval){
+        enemy.destroy()
+        clearInterval( interval)
     }
 
 
 
     function damage(num){
         playerlife = playerlife - num
+        console.log(playerlife)
         
     }
 
