@@ -128,6 +128,8 @@ let lifemsg
                 Player.setVelocityX(200)
             } else if (event.code === "KeyA"){
                 Player.setVelocityX(-200)
+            } else if (event.code === "KeyS"){
+                Player.setVelocityY(500)
             }
         })
         // 미끄러짐 없에기 실페
@@ -252,14 +254,14 @@ let lifemsg
     function enemy1(x,y,i,t){
         let enemy = t.physics.add.sprite(x,y,'enemy1').setScale(1)
 
-        enemyhp_list[i] = 5
+        enemyhp_list[i] = 7
 
         enemy_group.add( enemy)
         enemy.body.setGravityY(900)
         enemy.setBounce(0.3)
         t.physics.add.collider(enemy,Ground)
         //여기로 옯김
-        t.physics.add.overlap(Player,enemy,()=>{ damage(15); enemyDestroy(enemy,interval); console.log(playerlife) },null,t)
+        t.physics.add.overlap(Player,enemy,()=>{ damage(20); enemyDestroy(enemy,interval); console.log(playerlife) },null,t)
 
 
         t.physics.add.overlap(enemy,shot_group,()=>{enemyhp_list[i] -= 1 })
@@ -298,7 +300,8 @@ let lifemsg
         enemy.body.setGravityY(900)
         enemy.setBounce(0.3)
         t.physics.add.collider(enemy,Ground)
-        t.physics.add.overlap(enemy,Player,()=>{damage(7); enemyDestroy(enemy,e_interval)}, null, t)
+        t.physics.add.overlap(enemy,Player,()=>{damage(15); enemyDestroy(enemy,e_interval)}, null, t)
+        t.physics.add.overlap(enemy,shot_group,()=>{enemyhp_list[i] -= 1 })
 
         let e_interval = setInterval(()=>{
             DistanceToPlayer = Math.sqrt((enemy.x - Player.x) ** 2 + (enemy.y - Player.y)** 2  )
@@ -311,7 +314,7 @@ let lifemsg
 
             } else { enemy.setVelocityX(0) }
             if (enemyhp_list[i] <= 0 ){
-                enemyDestroy(enemy,interval)
+                enemyDestroy(enemy,e_interval)
             }
             if(DistanceToPlayer < 1200){shot_enemy2(enemy,t)}
         }, 1000)
@@ -323,12 +326,12 @@ let lifemsg
 
         t.physics.add.overlap(Player, enemy_bullet,()=>{  clearInterval(interval);enemy_bullet.destroy(); damage(5); }, null, t)
         t.physics.add.overlap(Ground, enemy_bullet, ()=>{ clearInterval(interval);enemy_bullet.destroy(); }, null, t)
+        if(Player.x -enemy.x > 0){
+            enemy_bullet.setVelocityX(140)
+        } else {
+            enemy_bullet.setVelocityX(-140)
+        }
         let interval = setInterval(()=>{
-            if(Player.x -enemy.x > 0){
-                enemy_bullet.setVelocityX(140)
-            } else {
-                enemy_bullet.setVelocityX(-140)
-            }
 
             if (enemy.x - enemy_bullet.x > 1200 || enemy.x- enemy_bullet.x < -1200){
                 enemy_bullet.destroy()
@@ -344,16 +347,20 @@ let lifemsg
         enemyhp_list[i] = 7
 
         enemy_group.add(enemy)
-
+        t.physics.add.overlap(enemy,shot_group,()=>{enemyhp_list[i] -= 1 })
+        
         let interval = setInterval(()=>{
-            if (Player.x - enemy.x < 1200 || Player.x - enemy.x > -1200){
-                enemy3_bullet(enemy,t)
+            if(enemyhp_list[i] <= 0){
+                enemyDestroy(enemy,interval)
+            }else if (Player.x - enemy.x < 1500 && Player.x - enemy.x > -1500){
+                enemy3_bullet(enemy,t, 0)
             }
-        }, 1000)
+        }, 1500)
     }
     
-    function enemy3_bullet(enemy,t){
-        let enemy_bullet = t.physics.add.sprite(enemy.x, enemy.y, 'enemy3_bullet').setScale(0.5)
+    function enemy3_bullet(enemy,t,type = 0){
+        let enemy_bullet = t.physics.add.sprite(enemy.x, enemy.y, 'enemy3_bullet').setScale(0.7)
+        enemy_bullet.scaleX = 1
 
         //let ag  = Math.abs((Math.atan((Player.x - enemy.x) / (Player.y - enemy.y)) - Math.atan((enemy.x - enemy.x)/(Player.y-enemy.y))) * 180 / Math.PI)
 
@@ -366,10 +373,42 @@ let lifemsg
         if(enemy.y-Player.y < 0){
             ag += 180
         }
-
-        console.log(ag)
         enemy_bullet.angle = ag
+
+        let movex = Player.x - enemy_bullet.x
+        let movey = Player.y - enemy_bullet.y
+        if(type === 0){
+            console.log(movex)
+            if (movex < 100 && movex > -100){
+                enemy_bullet.setVelocityX(movex*6)
+                enemy_bullet.setVelocityY(movey*6)
+            } else if (movex > 500 || movex < -500){
+                enemy_bullet.setVelocityX(movex*0.5)
+                enemy_bullet.setVelocityY(movey*0.5)
+                console.log(enemy_bullet)
+            } else {
+                enemy_bullet.setVelocityX(movex)
+                enemy_bullet.setVelocityY(movey)
+            }
+        } else if (type === 1){
+            enemy_bullet.setVelocityX(movex)
+            enemy_bullet.setVelocityY(movey)
+        }
+
+        t.physics.add.overlap(Player, enemy_bullet,()=>{ damage(1)}, null, t)
+
+        let interval = setInterval(()=>{
+
+
+            if (enemy.x - enemy_bullet.x > 1500 || enemy.x- enemy_bullet.x < -1500){
+                console.log(3)
+                enemy_bullet.destroy()
+                clearInterval(interval)
+            }
+        },1000)
     }
+
+    
 
     function enemyDestroy(enemy, interval){
         enemy.destroy()
