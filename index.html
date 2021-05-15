@@ -36,12 +36,17 @@
         this.load.image('gun', 'assets/gun1.PNG')
 
         this.load.image('enemy1', 'assets/enemy1.PNG')
-
         this.load.image('enemy2', 'assets/enemy2.PNG')
+        this.load.image('enemy3', 'assets/enemy3.PNG')
+        this.load.image('enemy3_bullet', 'assets/enemy3_bullet.PNG')
 
         this.load.image('GoalPoint', 'assets/goalpoint.PNG')
     }
+let isgamefinish = false
+
+
 let jump = 0
+
 
 let Player
 let PlayerCondition
@@ -63,6 +68,8 @@ let enemy_shot_group
 let shot_group
 
 let enemyhp_list = []
+
+let lifemsg
 
     function create(){
         //group 정의
@@ -94,16 +101,19 @@ let enemyhp_list = []
         Ground.create(700,1500,"ground1").setScale(5).refreshBody()
 
 
-        enemy1(700,300,0,this)
-        enemy1(800,300,1,this)
-        enemy2(800,300,2,this)
+        enemy1(700,600,0,this)
+        enemy1(800,600,1,this)
+        enemy2(800,600,2,this)
+        enemy3(600,700,3,this)
 
 
         //goal point 설정
-        let goalpoint = this.physics.add.sprite(500,700, 'GoalPoint').setScale(0.3)
+        let goalpoint = this.physics.add.sprite(500,700, 'GoalPoint').setScale(0.1)
         goalpoint.body.setGravityX(0)
         goalpoint.body.setGravityY(900)
         goalpoint.setBounce(1)
+        this.physics.add.overlap(Player,goalpoint,()=>{gamefinish(this)})
+
 
         // 바닥 물리 설정
         this.physics.add.collider(goalpoint,Ground)
@@ -111,7 +121,6 @@ let enemyhp_list = []
 
         //f플레이어 움직임 설정
         this.input.keyboard.on('keydown', (event)=> {
-            console.log(event.code)
             if (event.code === "KeyW" && jump < 2){
                 jump = jump + 1
                 Player.setVelocityY(-600)
@@ -147,11 +156,17 @@ let enemyhp_list = []
 
         let endinterval = setInterval(()=>{
             if (playerlife < 0){
-                let endmsg = this.add.text(Player.x-300, Player.y+50, 'score: 0', { fontSize: '100px', fill: 'red'})
-                endmsg.setText("Game Over")
-                clearInterval(endinterval)
+                if (isgamefinish === false){
+                    let endmsg = this.add.text(Player.x-300, Player.y+50, 'Game Over', { fontSize: '100px', fill: 'red'})
+                    endmsg.setText("Game Over")
+                    clearInterval(endinterval)
+                }
             }
         },3000)
+
+
+        //남은생명 메세지 정의
+        lifemsg = this.add.text(0,0, 'life', {fontSize:'30px', fill:'red'})
     }
 
     function update(){
@@ -160,10 +175,22 @@ let enemyhp_list = []
 
 
         if(Player.body.touching.down){
-
             jump = 0
         }
 
+
+        //남은 생명
+        lifemsg.setText(playerlife)
+        if (playerlife >= 100){
+            lifemsg.x = Player.x - 30
+            lifemsg.y = Player.y - 50
+        } if (playerlife < 100  && playerlife > 10){
+            lifemsg.x = Player.x - 20
+            lifemsg.y = Player.y - 50
+        } else if (playerlife < 10){
+            lifemsg.x = Player.x - 10
+            lifemsg.y = Player.y - 50
+        }
     }
 
     function shoting_bullet(t,G){
@@ -225,7 +252,7 @@ let enemyhp_list = []
     function enemy1(x,y,i,t){
         let enemy = t.physics.add.sprite(x,y,'enemy1').setScale(1)
 
-        enemyhp_list[i] = 4
+        enemyhp_list[i] = 5
 
         enemy_group.add( enemy)
         enemy.body.setGravityY(900)
@@ -246,9 +273,9 @@ let enemyhp_list = []
                 //    damage(15)
                 //    enemyDestroy(enemy,interval)
                 if (Player.x-enemy.x>0){
-                    enemy.setVelocityX(110)
+                    enemy.setVelocityX(200)
                 } else{
-                    enemy.setVelocityX(-110)
+                    enemy.setVelocityX(-200)
                 }
 
                 if (enemyhp_list[i] <= 0 ){
@@ -256,7 +283,7 @@ let enemyhp_list = []
                 }
 
             }
-        }, 1000)
+        }, 10)
 
         //enemy1dict[`enemy1_${enemy1num}`] = enemy
     }
@@ -310,6 +337,40 @@ let enemyhp_list = []
         },1000)
     }
 
+//enemy3 레이저 쏘는적
+    function enemy3(x,y,i,t){
+        let enemy = t.physics.add.sprite(x,y, 'enemy3').setScale(0.1)
+
+        enemyhp_list[i] = 7
+
+        enemy_group.add(enemy)
+
+        let interval = setInterval(()=>{
+            if (Player.x - enemy.x < 1200 || Player.x - enemy.x > -1200){
+                enemy3_bullet(enemy,t)
+            }
+        }, 1000)
+    }
+    
+    function enemy3_bullet(enemy,t){
+        let enemy_bullet = t.physics.add.sprite(enemy.x, enemy.y, 'enemy3_bullet').setScale(0.5)
+
+        //let ag  = Math.abs((Math.atan((Player.x - enemy.x) / (Player.y - enemy.y)) - Math.atan((enemy.x - enemy.x)/(Player.y-enemy.y))) * 180 / Math.PI)
+
+        //let ag = Math.abs(Math.atan((enemy.x - Player.x)/(enemy.y-Player.y)) *180 / Math.PI)
+        //반성공
+
+        //let ag = Math.atan2(enemy.x - Player.x, enemy.y-Player.y) *180 / Math.PI
+
+        let ag = -(Math.atan((enemy.x - Player.x)/(enemy.y-Player.y)) *180 / Math.PI)
+        if(enemy.y-Player.y < 0){
+            ag += 180
+        }
+
+        console.log(ag)
+        enemy_bullet.angle = ag
+    }
+
     function enemyDestroy(enemy, interval){
         enemy.destroy()
         clearInterval( interval)
@@ -319,10 +380,19 @@ let enemyhp_list = []
 
     function damage(num){
         playerlife = playerlife - num
-        console.log(playerlife)
         
     }
 
+
+    function gamefinish(t){
+        if (playerlife >= 0){
+            if(isgamefinish === false){
+                let endmsg = t.add.text(Player.x-300, Player.y-150, 'score: 0', { fontSize: '100px', fill: 'blue'})
+                endmsg.setText("Game Clear")
+                isgamefinish = true
+            }
+        }
+    }
 </script>
 
 </body>
