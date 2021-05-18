@@ -39,8 +39,11 @@
         this.load.image('enemy2', 'assets/enemy2.PNG')
         this.load.image('enemy3', 'assets/enemy3.PNG')
         this.load.image('enemy3_bullet', 'assets/enemy3_bullet.PNG')
+        this.load.image('enemy4', 'assets/enemy4.PNG')
 
         this.load.image('GoalPoint', 'assets/goalpoint.PNG')
+
+        this.load.image('spawner', 'assets/spawner.PNG')
     }
 let isgamefinish = false
 
@@ -101,10 +104,15 @@ let lifemsg
         Ground.create(700,1500,"ground1").setScale(5).refreshBody()
 
 
-        enemy1(700,600,0,this)
-        enemy1(800,600,1,this)
-        enemy2(800,600,2,this)
-        enemy3(600,700,3,this)
+        //적생성
+        //enemy1(700,600,0,this)
+        //enemy1(800,600,1,this)
+        //enemy2(800,600,2,this)
+        //enemy3(600,700,3,this)
+        enemy4(850,600,4,this)
+
+        // 스포너 생성
+        enemy_spawner(1300, 550,5,4,"enemy1",1,this)
 
 
         //goal point 설정
@@ -186,7 +194,7 @@ let lifemsg
         if (playerlife >= 100){
             lifemsg.x = Player.x - 30
             lifemsg.y = Player.y - 50
-        } if (playerlife < 100  && playerlife > 10){
+        } if (playerlife < 100  && playerlife >= 10){
             lifemsg.x = Player.x - 20
             lifemsg.y = Player.y - 50
         } else if (playerlife < 10){
@@ -385,7 +393,6 @@ let lifemsg
             } else if (movex > 500 || movex < -500){
                 enemy_bullet.setVelocityX(movex*0.5)
                 enemy_bullet.setVelocityY(movey*0.5)
-                console.log(enemy_bullet)
             } else {
                 enemy_bullet.setVelocityX(movex)
                 enemy_bullet.setVelocityY(movey)
@@ -401,13 +408,87 @@ let lifemsg
 
 
             if (enemy.x - enemy_bullet.x > 1500 || enemy.x- enemy_bullet.x < -1500){
-                console.log(3)
                 enemy_bullet.destroy()
                 clearInterval(interval)
             }
         },1000)
     }
 
+    function enemy4(x,y,i,t){
+        let enemy = t.physics.add.sprite(x,y,'enemy4').setScale(1)
+
+        let attack = false
+        let DistanceToPlayer
+
+        enemyhp_list[i] = 30
+
+        enemy_group.add( enemy)
+        enemy.body.setGravityY(900)
+        enemy.setBounce(0)
+        t.physics.add.collider(enemy,Ground)
+
+
+
+        t.physics.add.overlap(enemy,shot_group,()=>{enemyhp_list[i] -= 1 })
+    
+        let num = 0
+        let interval = setInterval(()=>{
+            DistanceToPlayer = Math.sqrt((enemy.x - Player.x) ** 2 + (enemy.y - Player.y)** 2  )
+            if(DistanceToPlayer < 900){
+
+                if (Player.x-enemy.x>0){
+                    enemy.setVelocityX(70)
+                    enemy.angle = 180
+                } else{
+                    enemy.setVelocityX(-70)
+                    enemy.angle = 0
+                }
+
+                num +=1
+
+console.log(num)
+                if (DistanceToPlayer < 100 && num > 4){
+                    damage(30)
+                    attack = false
+                    num = 0
+                }
+
+                if (enemyhp_list[i] <= 0 ){
+                    enemyDestroy(enemy,interval)
+                }
+            }
+        }, 1000)
+    }
+
+
+    function enemy_spawner(x,y,i,hp,kind , cycle, t,condition = true){
+        let enemy = t.physics.add.sprite(x,y, 'spawner').setScale(0.4)
+        enemyhp_list[i] = hp
+
+        enemy_group.add(enemy)
+        t.physics.add.overlap(enemy,shot_group,()=>{enemyhp_list[i] -= 1; enemyhp_list[i] < 0 ? enemyDestroy(interval,enemy) : undefind })
+
+        let e_spawn_num = 1
+        if (condition){
+            let interval = setInterval(()=>{
+                if (kind === "enemy1"){
+                    enemy1(x,y,enemyhp_list.length+e_spawn_num,t)
+                } else if (kind === "enemy2"){
+                    enemy2(x,y,enemyhp_list.length+e_spawn_num,t)
+                } else if (kind === "enemy3"){
+                    enemy3(x,y,enemyhp_list.length+e_spawn_num,t)
+                } else if (kind === "enemy4"){
+                    enemy4(x,y,enemyhp_list.length+e_spawn_num,t)
+                }
+
+                //if(enemyhp_list[i] <= 0){
+                //    enemyDestroy(enemy,interval)
+                //}
+                e_spawn_num += 1
+            }, cycle*1000)
+        }
+
+    }
     
 
     function enemyDestroy(enemy, interval){
