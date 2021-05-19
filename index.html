@@ -32,8 +32,10 @@
         this.load.image('background', 'assets/background.PNG')
         this.load.image('playerB', 'assets/player.PNG')
         this.load.image('ground1', 'assets/ground1.PNG')
+        this.load.image('ground2', 'assets/ground2.PNG')
         this.load.image('lastwall', 'assets/lastwall.PNG')
         this.load.image('gun', 'assets/gun1.PNG')
+        this.load.image('gun2', 'assets/gun2.PNG')
 
         this.load.image('enemy1', 'assets/enemy1.PNG')
         this.load.image('enemy2', 'assets/enemy2.PNG')
@@ -74,6 +76,15 @@ let enemyhp_list = []
 
 let lifemsg
 
+let gun_mode = 1
+
+
+    let mx_setting
+    let my_setting
+    let px_setting
+    let py_setting
+
+
     function create(){
         //group 정의
         enemy_group = this.add.group()
@@ -84,7 +95,7 @@ let lifemsg
 
 
         //background 설정
-        this.add.image(800,100, 'background').setScale(7)
+        this.add.image(8000,100, 'background').setScale(13)
         //player. 설정
         Player = this.physics.add.sprite(100,600,'playerB')
 
@@ -93,53 +104,102 @@ let lifemsg
 
         //camera 설정
         this.cameras.main.setBounds(0,0,20000,1200)
+        this.cameras.main.zoom = 1
         this.cameras.main.startFollow(Player, true, 0.11, 0.11)
 
 
 
-        // 총 설정
 
-
+        //지형 설정
         Ground.create(0,700, "lastwall").setScale(5).refreshBody()
-        Ground.create(700,1500,"ground1").setScale(5).refreshBody()
+        Ground.create(3000,1500,"ground1").setScale(5).refreshBody()
+        Ground.create(9700,1500,"ground1").setScale(5).refreshBody()
+        Ground.create(12000,700, "lastwall").setScale(5).refreshBody()
 
+        Ground.create(200, 700, "ground2").setScale(1).refreshBody()
+        setTimeout(()=>{
+            mx_setting =  0 
+            my_setting =  320
+            px_setting = Player.x
+            py_setting = Player.y
+        },2500)
+
+
+    setTimeout(()=>{
 
         //적생성
-        //enemy1(700,600,0,this)
-        //enemy1(800,600,1,this)
-        //enemy2(800,600,2,this)
-        //enemy3(600,700,3,this)
-        enemy4(850,600,4,this)
+        enemy1(700,600,0,this)
+
+        enemy2(900,600,1,this)
+
+        enemy2(1500,600,2,this)
+        enemy2(1400,600,3,this)
+
+        enemy3(2200,800,4,this)
+
+        enemy4(3000,800,5,this)
+        enemy2(3200,600,6,this)
+
+        enemy4(4000,800,7,this)
+        enemy4(4050,800,8,this)
+        enemy4(4100,800,9,this)
+
+        enemy3(5800,800,10,this)
+        enemy3(5800,700,11,this)
+        enemy3(5800,600,12,this)
+        enemy3(5800,650,13,this)
+
 
         // 스포너 생성
-        enemy_spawner(1300, 550,5,4,"enemy1",1,this)
+//(x,y,<i></i>,hp,kind,cylcle,t,condition)
+        enemy_spawner(4300, 550,10, 5,"enemy1",1,this, 3100)
+
 
 
         //goal point 설정
-        let goalpoint = this.physics.add.sprite(500,700, 'GoalPoint').setScale(0.1)
+        let goalpoint = this.physics.add.sprite(11900,700, 'GoalPoint').setScale(0.1)
         goalpoint.body.setGravityX(0)
         goalpoint.body.setGravityY(900)
         goalpoint.setBounce(1)
         this.physics.add.overlap(Player,goalpoint,()=>{gamefinish(this)})
+        this.physics.add.collider(goalpoint,Ground)
+    },2000)
 
 
         // 바닥 물리 설정
-        this.physics.add.collider(goalpoint,Ground)
         this.physics.add.collider(Player,Ground)
 
         //f플레이어 움직임 설정
-        this.input.keyboard.on('keydown', (event)=> {
-            if (event.code === "KeyW" && jump < 2){
-                jump = jump + 1
-                Player.setVelocityY(-600)
-            } else if (event.code === "KeyD"){
-                Player.setVelocityX(200)
-            } else if (event.code === "KeyA"){
-                Player.setVelocityX(-200)
-            } else if (event.code === "KeyS"){
-                Player.setVelocityY(500)
+        setTimeout(()=>{
+            if (isgamefinish === true){
+
+            } else {
+
+                this.input.keyboard.on('keydown', (event)=> {
+                    if (event.code === "KeyW" && jump < 2){
+                        jump = jump + 1
+                        Player.setVelocityY(-600)
+                    } else if (event.code === "KeyD"){
+                        Player.setVelocityX(200)
+                    } else if (event.code === "KeyA"){
+                        Player.setVelocityX(-200)
+                    } else if (event.code === "KeyS"){
+                        Player.setVelocityY(500)
+                        Player.setVelocityX(0)
+                    } else if (event.code === "Space"){
+                        Player.setVelocityX(1000)
+                    }
+                })
+                // 총 모드 바꾸기
+                this.input.keyboard.on('keydown', (event)=> {
+                    if (event.code === "Digit1"){
+                        gun_mode = 1
+                    } else if (event.code === "Digit2"){
+                        gun_mode = 2
+                    }
+                })
             }
-        })
+        },3000)
         // 미끄러짐 없에기 실페
         //this.input.keyboard.on('keyup', (event)=> {
         //    if (event.code === "KeyD" || event.code === "KeyA"){
@@ -167,6 +227,7 @@ let lifemsg
         let endinterval = setInterval(()=>{
             if (playerlife < 0){
                 if (isgamefinish === false){
+                    isgamefinish = true
                     let endmsg = this.add.text(Player.x-300, Player.y+50, 'Game Over', { fontSize: '100px', fill: 'red'})
                     endmsg.setText("Game Over")
                     clearInterval(endinterval)
@@ -194,13 +255,17 @@ let lifemsg
         if (playerlife >= 100){
             lifemsg.x = Player.x - 30
             lifemsg.y = Player.y - 50
-        } if (playerlife < 100  && playerlife >= 10){
+        } else if (playerlife < 100  && playerlife >= 10){
             lifemsg.x = Player.x - 20
             lifemsg.y = Player.y - 50
         } else if (playerlife < 10){
             lifemsg.x = Player.x - 10
             lifemsg.y = Player.y - 50
+        } else if (playerlife <= 0){
+            lifemsg.x = Player.x
+            lifemsg.y = Player.y
         }
+
     }
 
     function shoting_bullet(t,G){
@@ -214,38 +279,72 @@ let lifemsg
     
     //atan 각도구하기 현재 미구현 총 발사 함수
     function shot(t,G){
-        const mx = game.input.mousePointer.x
         // 클릭한 위치로 발사하기 만들기
-        //const my = game.input.mousePointer.y
-        const px = Player.x
-        const py = Player.y
         //console.log(mx)
 
-        let bullet = t.physics.add.sprite(px,py, 'gun').setScale(0.7)
-        shot_group.add(bullet)
-        bullet.body.setGravityY(0)
-        bullet.body.setGravityX(0)
+        if (gun_mode === 1){
+            let bullet = t.physics.add.sprite(Player.x,Player.y, 'gun').setScale(0.7)
+            shot_group.add(bullet)
+            bullet.body.setGravityY(0)
+            bullet.body.setGravityX(0)
 
+            let mx = game.input.mousePointer.x
+            let my = game.input.mousePointer.y
+            let px = Player.x - px_setting
+            let py = Player.y - py_setting
 
-        t.physics.add.overlap(G,bullet,()=>(shotDestroy(bullet,shotinterval))) 
-        // 총=> 적 반응 설정
-        t.physics.add.overlap(enemy_group,shot_group,()=>{hit_enemy(bullet,shotinterval)},null,t)
+            t.physics.add.overlap(G,bullet,()=>(shotDestroy(bullet,shotinterval))) 
+            // 총=> 적 반응 설정
+            t.physics.add.overlap(enemy_group,shot_group,()=>{hit_enemy(bullet,shotinterval)},null,t)
 
-        let shotinterval = setInterval(()=>{
-            //if (mx - px > 0  ){
-            if (mx > 450) {
-                bullet.setVelocityX(500)
-            } else if(px < 450 && mx - px > 0 ){
-                bullet.setVelocityX(500)
-            }else{
-                bullet.setVelocityX(-500)
-            }
+            let shotinterval = setInterval(()=>{
+                //if (mx - px > 0  ){
+                if (mx > 450) {
+                    bullet.setVelocityX(500)
+                } else if(px < 450 && mx - px > 0 ){
+                    bullet.setVelocityX(500)
+                }else{
+                    bullet.setVelocityX(-500)
+                }
 
-            if((bullet.x - px) > 600 ||  (bullet.x - px) < -600){
-                shotDestroy(bullet,shotinterval)
-            }
-        },1)
+                if((bullet.x - px) > 600 ||  (bullet.x - px) < -600){
+                    shotDestroy(bullet,shotinterval)
+                }
+            },1)
         // Gun.children.entries[Gun.children.entries.length-1].angle = 10
+        } else if (gun_mode === 2){
+            let bullet = t.physics.add.sprite(Player.x,Player.y-20, 'gun2').setScale(0.7)
+
+            let mx = game.input.mousePointer.x - mx_setting
+            let my = game.input.mousePointer.y - my_setting
+            let px = Player.x - px_setting
+            let py = Player.y - py_setting
+            let length_x = Math.abs(mx - px)
+            let length_y = Math.abs(my - py)
+
+            shot_group.add(bullet)
+            bullet.body.setGravityY(0)
+            bullet.body.setGravityX(0)
+
+            //t.physics.add.overlap(G,bullet,()=>(shotDestroy(bullet,shotinterval))) 
+            //t.physics.add.overlap(enemy_group,shot_group,()=>{hit_enemy(bullet,shotinterval)},null,t)
+
+            console.log(py,my)
+            let ag = Math.atan2(length_y, length_x)
+            bullet.angle = ag * 180 / Math.PI
+
+            //let shotinterval = setInterval(()=>{
+            //    if (mx > 450) {
+            //        bullet.setVelocityX(mx-px)
+            //        bullet.setVelocityY(my - 800 -py)
+            //    } else if(px < 450 && mx - px > 0 ){
+            //        bullet.setVelocityX(mx-px)
+            //    }else{
+            //        bullet.setVelocityX(-500)
+            //    }
+            //
+            //},1)
+        }
     }
 
     function hit_enemy(bullet,shotinterval){
@@ -262,14 +361,14 @@ let lifemsg
     function enemy1(x,y,i,t){
         let enemy = t.physics.add.sprite(x,y,'enemy1').setScale(1)
 
-        enemyhp_list[i] = 7
+        enemyhp_list[i] = 4
 
         enemy_group.add( enemy)
         enemy.body.setGravityY(900)
         enemy.setBounce(0.3)
         t.physics.add.collider(enemy,Ground)
         //여기로 옯김
-        t.physics.add.overlap(Player,enemy,()=>{ damage(20); enemyDestroy(enemy,interval); console.log(playerlife) },null,t)
+        t.physics.add.overlap(Player,enemy,()=>{ damage(20); enemyDestroy(enemy,interval); },null,t)
 
 
         t.physics.add.overlap(enemy,shot_group,()=>{enemyhp_list[i] -= 1 })
@@ -378,9 +477,7 @@ let lifemsg
         //let ag = Math.atan2(enemy.x - Player.x, enemy.y-Player.y) *180 / Math.PI
 
         let ag = -(Math.atan((enemy.x - Player.x)/(enemy.y-Player.y)) *180 / Math.PI)
-        if(enemy.y-Player.y < 0){
-            ag += 180
-        }
+        if(enemy.y-Player.y < 0){ ag += 180 }
         enemy_bullet.angle = ag
 
         let movex = Player.x - enemy_bullet.x
@@ -446,7 +543,6 @@ let lifemsg
 
                 num +=1
 
-console.log(num)
                 if (DistanceToPlayer < 100 && num > 4){
                     damage(30)
                     attack = false
@@ -461,32 +557,37 @@ console.log(num)
     }
 
 
-    function enemy_spawner(x,y,i,hp,kind , cycle, t,condition = true){
+    function enemy_spawner(x,y,i,hp,kind , cycle, t,condition){
         let enemy = t.physics.add.sprite(x,y, 'spawner').setScale(0.4)
         enemyhp_list[i] = hp
+        console.log(condition)
 
         enemy_group.add(enemy)
-        t.physics.add.overlap(enemy,shot_group,()=>{enemyhp_list[i] -= 1; enemyhp_list[i] < 0 ? enemyDestroy(interval,enemy) : undefind })
+        let interval
+        t.physics.add.overlap(enemy,shot_group,()=>{enemyhp_list[i] -= 1; })
 
         let e_spawn_num = 1
-        if (condition){
-            let interval = setInterval(()=>{
-                if (kind === "enemy1"){
-                    enemy1(x,y,enemyhp_list.length+e_spawn_num,t)
-                } else if (kind === "enemy2"){
-                    enemy2(x,y,enemyhp_list.length+e_spawn_num,t)
-                } else if (kind === "enemy3"){
-                    enemy3(x,y,enemyhp_list.length+e_spawn_num,t)
-                } else if (kind === "enemy4"){
-                    enemy4(x,y,enemyhp_list.length+e_spawn_num,t)
-                }
+        let interval_wait = setInterval(()=>{
+            if (Player.x > condition){
+                clearInterval(interval_wait)
+                interval = setInterval(()=>{
+                    if (kind === "enemy1"){
+                        enemy1(x,y,enemyhp_list.length+e_spawn_num,t)
+                    } else if (kind === "enemy2"){
+                        enemy2(x,y,enemyhp_list.length+e_spawn_num,t)
+                    } else if (kind === "enemy3"){
+                        enemy3(x,y,enemyhp_list.length+e_spawn_num,t)
+                    } else if (kind === "enemy4"){
+                        enemy4(x,y,enemyhp_list.length+e_spawn_num,t)
+                    }
 
-                //if(enemyhp_list[i] <= 0){
-                //    enemyDestroy(enemy,interval)
-                //}
-                e_spawn_num += 1
-            }, cycle*1000)
-        }
+                    if(enemyhp_list[i] <= 0){
+                       enemyDestroy(enemy,interval)
+                    }
+                    e_spawn_num += 1
+                }, cycle*1000)
+            }
+        },1000)
 
     }
     
